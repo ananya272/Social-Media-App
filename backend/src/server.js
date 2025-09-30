@@ -24,6 +24,8 @@ app.get('/', (req, res) => {
 });
 app.use('/auth', require('./routes/auth'));
 app.use('/posts', require('./routes/posts'));
+app.use('/notifications', require('./routes/notifications'));
+app.use('/users', require('./routes/users'));
 
 // Error handler (basic)
 app.use((err, req, res, next) => {
