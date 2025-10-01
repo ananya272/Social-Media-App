@@ -4,6 +4,35 @@ const Post = require('../models/Post');
 const Notification = require('../models/Notification');
 const router = express.Router();
 
+// GET /posts - get all posts with pagination
+router.get('/', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('userId', 'username email profilePic')
+      .populate('comments.userId', 'username email profilePic');
+
+    const total = await Post.countDocuments();
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      posts,
+      currentPage: page,
+      totalPages,
+      totalPosts: total
+    });
+  } catch (err) {
+    console.error('Get posts error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /posts - create post (auth required)
 router.post('/', auth, async (req, res) => {
   try {

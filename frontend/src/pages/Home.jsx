@@ -10,6 +10,11 @@ export default function Home() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalPosts: 0
+  })
   const { search } = useLocation()
   const navigate = useNavigate()
 
@@ -23,13 +28,19 @@ export default function Home() {
     }
   }, [q])
 
-  const load = async () => {
+  const load = async (page = 1) => {
     try {
       setError('')
       setLoading(true)
-      const { data } = await api.get('/posts')
-      setPosts(data)
+      const { data } = await api.get(`/posts?page=${page}`)
+      setPosts(data.posts || [])
+      setPagination({
+        currentPage: data.currentPage || 1,
+        totalPages: data.totalPages || 1,
+        totalPosts: data.totalPosts || 0
+      })
     } catch (err) {
+      console.error('Error loading posts:', err)
       setError(err?.response?.data?.error || 'Failed to load posts')
     } finally {
       setLoading(false)
@@ -37,7 +48,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    load()
+    load(1)
   }, [])
 
   const onCreated = (post) => {
@@ -72,14 +83,29 @@ export default function Home() {
       {!loading && posts.length === 0 && (
         <div className="card p-8 text-center text-slate-300">No posts yet. Be the first to post!</div>
       )}
-      {(
-        (activeTag
-          ? posts.filter((p) => (p.text || '').includes(activeTag))
-          : posts
-        )
-      ).map((post) => (
+      {posts
+        .filter(post => activeTag ? (post.text || '').includes(activeTag) : true)
+        .map((post) => (
         <PostCard key={post._id} post={post} onUpdated={onUpdated} onDelete={post.userId?._id === user?.id ? onDelete : undefined} />
       ))}
+      
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-4">
+          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => load(page)}
+              className={`px-3 py-1 rounded ${
+                pagination.currentPage === page
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
